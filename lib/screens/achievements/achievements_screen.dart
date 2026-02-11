@@ -271,12 +271,18 @@ class _AchievementBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+    final lockedBg = isDark ? Colors.white12 : Colors.grey.shade200;
+    final lockedIconColor = isDark ? Colors.white38 : Colors.grey.shade400;
+    final progressBg = isDark ? Colors.white12 : Colors.grey.shade200;
+
     return GestureDetector(
       onTap: () => _showDetail(context),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardBg,
           borderRadius: BorderRadius.circular(20),
           border: isUnlocked ? Border.all(
             color: achievement.rarity.color.withValues(alpha: 0.3),
@@ -293,7 +299,6 @@ class _AchievementBadge extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 徽章图标
             Container(
               width: 52,
               height: 52,
@@ -305,12 +310,12 @@ class _AchievementBadge extends StatelessWidget {
                         colors: achievement.rarity.gradientColors,
                       )
                     : null,
-                color: isUnlocked ? null : Colors.grey.shade200,
+                color: isUnlocked ? null : lockedBg,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
                 isUnlocked ? achievement.icon : Icons.lock_rounded,
-                color: isUnlocked ? Colors.white : Colors.grey.shade400,
+                color: isUnlocked ? Colors.white : lockedIconColor,
                 size: 26,
               ),
             ),
@@ -348,7 +353,7 @@ class _AchievementBadge extends StatelessWidget {
                       borderRadius: BorderRadius.circular(2),
                       child: LinearProgressIndicator(
                         value: achievement.progressPercent,
-                        backgroundColor: Colors.grey.shade200,
+                        backgroundColor: progressBg,
                         color: AppTheme.primaryColor.withValues(alpha: 0.5),
                         minHeight: 3,
                       ),
@@ -373,9 +378,16 @@ class _AchievementBadge extends StatelessWidget {
   }
 
   void _showDetail(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = isDark ? AppTheme.darkSurfaceColor : null;
+    final lockedBg = isDark ? Colors.white12 : Colors.grey.shade200;
+    final lockedIconColor = isDark ? Colors.white38 : Colors.grey.shade400;
+    final progressBg = isDark ? Colors.white12 : Colors.grey.shade200;
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
+        backgroundColor: dialogBg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Padding(
           padding: const EdgeInsets.all(28),
@@ -394,7 +406,7 @@ class _AchievementBadge extends StatelessWidget {
                           colors: achievement.rarity.gradientColors,
                         )
                       : null,
-                  color: isUnlocked ? null : Colors.grey.shade200,
+                  color: isUnlocked ? null : lockedBg,
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: isUnlocked ? [
                     BoxShadow(
@@ -406,7 +418,7 @@ class _AchievementBadge extends StatelessWidget {
                 ),
                 child: Icon(
                   isUnlocked ? achievement.icon : Icons.lock_rounded,
-                  color: isUnlocked ? Colors.white : Colors.grey.shade400,
+                  color: isUnlocked ? Colors.white : lockedIconColor,
                   size: 40,
                 ),
               ),
@@ -478,7 +490,7 @@ class _AchievementBadge extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: achievement.progressPercent,
-                      backgroundColor: Colors.grey.shade200,
+                      backgroundColor: progressBg,
                       color: AppTheme.primaryColor,
                       minHeight: 8,
                     ),

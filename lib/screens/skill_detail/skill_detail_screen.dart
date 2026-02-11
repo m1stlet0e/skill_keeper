@@ -95,6 +95,9 @@ class _SkillDetailScreenState extends State<SkillDetailScreen> {
   }
 
   Widget _buildAppBar(Skill skill) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final btnBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -104,20 +107,19 @@ class _SkillDetailScreenState extends State<SkillDetailScreen> {
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: btnBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.arrow_back_rounded),
             ),
           ),
           const Spacer(),
-          // 编辑按钮
           GestureDetector(
             onTap: () => _showEditSheet(skill),
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: btnBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
@@ -127,13 +129,12 @@ class _SkillDetailScreenState extends State<SkillDetailScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          // 删除按钮
           GestureDetector(
             onTap: () => _showDeleteDialog(skill),
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: btnBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -148,16 +149,20 @@ class _SkillDetailScreenState extends State<SkillDetailScreen> {
   }
 
   Widget _buildSkillHeader(Skill skill) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+    final shadowColor = isDark ? Colors.black.withValues(alpha: 0.25) : skill.category.color.withValues(alpha: 0.2);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardBg,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: skill.category.color.withValues(alpha: 0.2),
+              color: shadowColor,
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -275,13 +280,17 @@ class _SkillDetailScreenState extends State<SkillDetailScreen> {
 
   Widget _buildProficiencyChart(SkillService skillService, Skill skill) {
     final history = skillService.getProficiencyHistory(widget.skillId, days: _selectedDays);
-    
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+    final selectorBg = isDark ? Colors.white12 : Colors.grey.shade100;
+    final gridLineColor = isDark ? Colors.white12 : Colors.grey.shade200;
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardBg,
           borderRadius: BorderRadius.circular(24),
         ),
         child: Column(
@@ -298,11 +307,10 @@ class _SkillDetailScreenState extends State<SkillDetailScreen> {
                     color: AppTheme.textPrimary,
                   ),
                 ),
-                // 时间范围选择
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
+                    color: selectorBg,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -342,7 +350,7 @@ class _SkillDetailScreenState extends State<SkillDetailScreen> {
                     horizontalInterval: 20,
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
-                        color: Colors.grey.shade200,
+                        color: gridLineColor,
                         strokeWidth: 1,
                       );
                     },
@@ -463,10 +471,13 @@ class _SkillDetailScreenState extends State<SkillDetailScreen> {
     required String value,
     required Color color,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBg,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -693,6 +704,10 @@ class _SkillDetailScreenState extends State<SkillDetailScreen> {
     var targetPerWeek = skill.targetPracticePerWeek;
     var practiceMin = skill.practiceMinutes;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+    final handleColor = isDark ? Colors.white24 : Colors.grey.shade300;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -703,9 +718,9 @@ class _SkillDetailScreenState extends State<SkillDetailScreen> {
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(ctx).viewInsets.bottom,
             ),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            decoration: BoxDecoration(
+              color: sheetBg,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Padding(
               padding: const EdgeInsets.all(24),
@@ -718,7 +733,7 @@ class _SkillDetailScreenState extends State<SkillDetailScreen> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.grey[300],
+                        color: handleColor,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),

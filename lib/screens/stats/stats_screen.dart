@@ -189,16 +189,21 @@ class StatsScreen extends StatelessWidget {
     final flowMins = totalFlowMinutes % 60;
     final flowTimeStr = flowHours > 0 ? '${flowHours}h${flowMins}m' : '${flowMins}m';
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+    final shadowColor = isDark ? Colors.black.withValues(alpha: 0.25) : Colors.deepPurple.withValues(alpha: 0.08);
+    final dividerColor = isDark ? Colors.white12 : Colors.grey.shade200;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardBg,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.deepPurple.withValues(alpha: 0.08),
+              color: shadowColor,
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -243,7 +248,7 @@ class StatsScreen extends StatelessWidget {
                     color: Colors.purple.shade400,
                   ),
                 ),
-                Container(width: 1, height: 40, color: Colors.grey.shade200),
+                Container(width: 1, height: 40, color: dividerColor),
                 Expanded(
                   child: _buildFlowMetric(
                     context,
@@ -252,7 +257,7 @@ class StatsScreen extends StatelessWidget {
                     color: Colors.deepPurple.shade500,
                   ),
                 ),
-                Container(width: 1, height: 40, color: Colors.grey.shade200),
+                Container(width: 1, height: 40, color: dividerColor),
                 Expanded(
                   child: _buildFlowMetric(
                     context,
@@ -410,14 +415,20 @@ class StatsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Container(
-                        height: h,
-                        decoration: BoxDecoration(
-                          color: min > 0
-                              ? Colors.purple.withValues(alpha: 0.4 + 0.3 * (min / maxHeight))
-                              : Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
+                      Builder(
+                        builder: (context) {
+                          final isDark = Theme.of(context).brightness == Brightness.dark;
+                          final emptyColor = isDark ? Colors.white12 : Colors.grey.shade200;
+                          return Container(
+                            height: h,
+                            decoration: BoxDecoration(
+                              color: min > 0
+                                  ? Colors.purple.withValues(alpha: 0.4 + 0.3 * (min / maxHeight))
+                                  : emptyColor,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -479,39 +490,41 @@ class StatsScreen extends StatelessWidget {
         .where((c) => categoryProf[c]! > 0)
         .toList();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+
     if (activeCategories.length < 3) {
-      // 雷达图至少需要3个维度
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            color: cardBg,
+            borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
             children: [
-              const Text(
+              Text(
                 '技能雷达',
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                   color: AppTheme.textPrimary,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Icon(
                 Icons.radar_rounded,
-                size: 48,
-                color: AppTheme.textHint.withValues(alpha: 0.3),
+                size: 40,
+                color: AppTheme.textHint.withValues(alpha: 0.4),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Text(
-                '至少添加3个不同分类的技能\n才能解锁雷达图',
+                '至少 3 个不同分类的技能后可显示',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: AppTheme.textHint,
-                  fontSize: 13,
+                  fontSize: 12,
                 ),
               ),
             ],
@@ -520,148 +533,188 @@ class StatsScreen extends StatelessWidget {
       ).animate(delay: 400.ms).fadeIn();
     }
 
+    // 参考能力雷达图：六边形网格、三层同心浅灰环、轴标签外置、半透明填充+描边、图例右上角
+    final axisColor = isDark
+        ? Colors.white.withValues(alpha: 0.2)
+        : Colors.grey.shade700;
+    final ringColor = isDark
+        ? Colors.white.withValues(alpha: 0.1)
+        : Colors.grey.shade300;
+    final ringBorder = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.grey.shade400;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          color: cardBg,
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '技能雷达',
               style: TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
                 color: AppTheme.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Text(
-              '各分类技能的平均熟练度',
+              '各分类平均熟练度',
               style: TextStyle(
                 fontSize: 12,
                 color: AppTheme.textHint,
               ),
             ),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 260,
-              child: RadarChart(
-                RadarChartData(
-                  radarShape: RadarShape.polygon,
-                  radarBorderData: BorderSide(
-                    color: Colors.grey.shade200,
-                    width: 1,
-                  ),
-                  gridBorderData: BorderSide(
-                    color: Colors.grey.shade200,
-                    width: 0.5,
-                  ),
-                  tickBorderData: const BorderSide(color: Colors.transparent),
-                  tickCount: 4,
-                  ticksTextStyle: TextStyle(
-                    fontSize: 9,
-                    color: AppTheme.textHint.withValues(alpha: 0.5),
-                  ),
-                  titlePositionPercentageOffset: 0.2,
-                  titleTextStyle: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  getTitle: (index, angle) {
-                    final cat = activeCategories[index];
-                    return RadarChartTitle(
-                      text: cat.displayName,
-                      angle: 0,
-                    );
-                  },
-                  dataSets: [
-                    RadarDataSet(
-                      fillColor: AppTheme.primaryColor.withValues(alpha: 0.2),
-                      borderColor: AppTheme.primaryColor,
-                      borderWidth: 2,
-                      entryRadius: 4,
-                      dataEntries: activeCategories.map((cat) {
-                        return RadarEntry(value: categoryProf[cat]!);
-                      }).toList(),
-                    ),
-                  ],
-                  radarBackgroundColor: Colors.transparent,
-                ),
-              ),
-            ),
-            // 图例
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              children: activeCategories.map((cat) {
-                final prof = categoryProf[cat]!;
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: cat.color,
-                        shape: BoxShape.circle,
+            Stack(
+              alignment: Alignment.topRight,
+              children: [
+                SizedBox(
+                  height: 260,
+                  child: RadarChart(
+                    RadarChartData(
+                      radarShape: RadarShape.polygon,
+                      radarBorderData: BorderSide(
+                        color: axisColor,
+                        width: 1.2,
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${cat.displayName} ${prof.toInt()}%',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppTheme.textSecondary,
+                      gridBorderData: BorderSide(
+                        color: ringColor,
+                        width: 0.8,
                       ),
+                      tickBorderData: BorderSide(
+                        color: ringBorder,
+                        width: 0.5,
+                      ),
+                      tickCount: 3,
+                      ticksTextStyle: TextStyle(
+                        fontSize: 9,
+                        color: Colors.transparent,
+                      ),
+                      titlePositionPercentageOffset: 0.22,
+                      titleTextStyle: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.textPrimary,
+                      ),
+                      getTitle: (index, angle) {
+                        final cat = activeCategories[index];
+                        return RadarChartTitle(
+                          text: cat.displayName,
+                          angle: 0,
+                        );
+                      },
+                      dataSets: [
+                        RadarDataSet(
+                          fillColor: AppTheme.primaryColor.withValues(alpha: 0.25),
+                          borderColor: AppTheme.primaryColor,
+                          borderWidth: 2,
+                          entryRadius: 2,
+                          dataEntries: activeCategories.map((cat) {
+                            return RadarEntry(value: categoryProf[cat]!);
+                          }).toList(),
+                        ),
+                      ],
+                      radarBackgroundColor: Colors.transparent,
                     ),
-                  ],
-                );
-              }).toList(),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, right: 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: activeCategories.map((cat) {
+                      final prof = categoryProf[cat]!;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: cat.color,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${cat.displayName} ${prof.toInt()}%',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
-    ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.1, end: 0);
+    ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.05, end: 0);
   }
 
+  /// 打卡热力图：按月份展示，每行一月、31 格为日 1–31
   Widget _buildHeatMap(BuildContext context, SkillService service) {
     final heatMap = service.practiceHeatMap;
     final now = DateTime.now();
-    
-    // 显示最近12周的数据
-    const weeks = 12;
-    final startDate = now.subtract(const Duration(days: weeks * 7));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+    final emptyColor = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.grey.shade200;
+
+    const monthsCount = 12;
+    const cellSize = 10.0;
+    const cellGap = 1.5;
+
+    // 最近 12 个月：当前月、上月、…
+    final months = List.generate(monthsCount, (i) {
+      final d = DateTime(now.year, now.month - i, 1);
+      return DateTime(d.year, d.month);
+    });
+
+    int lastDayOfMonth(int y, int m) {
+      return DateTime(y, m + 1, 0).day;
+    }
 
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          color: cardBg,
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Text(
+                Text(
                   '打卡热力图',
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                     color: AppTheme.textPrimary,
                   ),
                 ),
                 const Spacer(),
                 Text(
-                  '最近$weeks周',
+                  '按月份',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppTheme.textHint,
@@ -669,23 +722,35 @@ class StatsScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            // 星期标签
+            const SizedBox(height: 12),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  width: 24,
+                  width: 32,
                   child: Column(
-                    children: ['一', '三', '五', '日'].map((d) {
+                    children: months.asMap().entries.map((e) {
+                      final i = e.key;
+                      final monthDate = e.value;
+                      final label = i == 0
+                          ? '本月'
+                          : monthDate.year != now.year
+                              ? '${monthDate.month}月'
+                              : '${monthDate.month}月';
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 5),
+                        padding: EdgeInsets.only(
+                          bottom: i < monthsCount - 1 ? cellGap : 0,
+                        ),
                         child: SizedBox(
-                          height: 14,
-                          child: Text(
-                            d,
-                            style: TextStyle(
-                              fontSize: 9,
-                              color: AppTheme.textHint,
+                          height: cellSize,
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: AppTheme.textHint,
+                              ),
                             ),
                           ),
                         ),
@@ -698,32 +763,44 @@ class StatsScreen extends StatelessWidget {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: List.generate(weeks, (weekIndex) {
-                        return Column(
-                          children: List.generate(7, (dayIndex) {
-                            final date = startDate.add(Duration(days: weekIndex * 7 + dayIndex));
-                            final dateKey = DateTime(date.year, date.month, date.day);
-                            final count = heatMap[dateKey] ?? 0;
-                            final isAfterToday = date.isAfter(now);
-                            
-                            return Padding(
-                              padding: const EdgeInsets.all(1.5),
-                              child: Container(
-                                width: 14,
-                                height: 14,
-                                decoration: BoxDecoration(
-                                  color: isAfterToday 
-                                      ? Colors.transparent
-                                      : _getHeatColor(count),
-                                  borderRadius: BorderRadius.circular(3),
-                                  border: isAfterToday ? Border.all(
-                                    color: Colors.grey.shade200,
-                                    width: 0.5,
-                                  ) : null,
+                      children: List.generate(31, (dayCol) {
+                        final day = dayCol + 1;
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            right: dayCol < 30 ? cellGap : 0,
+                          ),
+                          child: Column(
+                            children: months.asMap().entries.map((e) {
+                              final monthDate = e.value;
+                              final y = monthDate.year;
+                              final m = monthDate.month;
+                              final lastDay = lastDayOfMonth(y, m);
+                              final invalidDay = day > lastDay;
+                              final date = DateTime(y, m, day);
+                              final isFuture = date.isAfter(now);
+                              final dateKey = DateTime(y, m, day);
+                              final count = invalidDay ? 0 : (heatMap[dateKey] ?? 0);
+
+                              Color cellColor;
+                              if (invalidDay || isFuture) {
+                                cellColor = emptyColor.withValues(alpha: 0.5);
+                              } else {
+                                cellColor = _getHeatColor(context, count);
+                              }
+
+                              return Padding(
+                                padding: EdgeInsets.only(bottom: cellGap),
+                                child: Container(
+                                  width: cellSize,
+                                  height: cellSize,
+                                  decoration: BoxDecoration(
+                                    color: cellColor,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
                                 ),
-                              ),
-                            );
-                          }),
+                              );
+                            }).toList(),
+                          ),
                         );
                       }),
                     ),
@@ -732,51 +809,66 @@ class StatsScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // 图例
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
                   '少',
-                  style: TextStyle(fontSize: 10, color: AppTheme.textHint),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: AppTheme.textHint,
+                  ),
                 ),
                 const SizedBox(width: 4),
-                ...[0, 1, 2, 3].map((level) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 1),
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: _getHeatColor(level),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
+                ...List.generate(4, (i) => Padding(
+                  padding: const EdgeInsets.only(left: 2),
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: _getHeatColor(context, i),
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                  );
-                }),
+                  ),
+                )),
                 const SizedBox(width: 4),
                 Text(
                   '多',
-                  style: TextStyle(fontSize: 10, color: AppTheme.textHint),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: AppTheme.textHint,
+                  ),
                 ),
               ],
             ),
           ],
         ),
       ),
-    ).animate(delay: 500.ms).fadeIn().slideY(begin: 0.1, end: 0);
+    ).animate(delay: 500.ms).fadeIn().slideY(begin: 0.05, end: 0);
   }
 
-  Color _getHeatColor(int count) {
-    if (count <= 0) return Colors.grey.shade100;
-    if (count == 1) return AppTheme.primaryColor.withValues(alpha: 0.3);
-    if (count == 2) return AppTheme.primaryColor.withValues(alpha: 0.6);
+  Color _getHeatColor(BuildContext context, int count) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (count <= 0) {
+      return isDark
+          ? Colors.white.withValues(alpha: 0.06)
+          : Colors.grey.shade100;
+    }
+    if (count == 1) {
+      return AppTheme.primaryColor.withValues(alpha: 0.35);
+    }
+    if (count == 2) {
+      return AppTheme.primaryColor.withValues(alpha: 0.65);
+    }
     return AppTheme.primaryColor;
   }
 
   Widget _buildCategoryBreakdown(BuildContext context, SkillService service) {
     if (service.skills.isEmpty) return const SizedBox.shrink();
-    
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+
     final categoryMap = <SkillCategory, List<Skill>>{};
     for (final skill in service.skills) {
       categoryMap.putIfAbsent(skill.category, () => []);
@@ -788,7 +880,7 @@ class StatsScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardBg,
           borderRadius: BorderRadius.circular(24),
         ),
         child: Column(

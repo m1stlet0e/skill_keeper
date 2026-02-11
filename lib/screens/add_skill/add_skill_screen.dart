@@ -49,7 +49,9 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppTheme.darkSurfaceColor
+                              : Colors.white,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(Icons.arrow_back_rounded),
@@ -296,35 +298,51 @@ class _AddSkillScreenState extends State<AddSkillScreen> {
 
   Widget _buildPracticeTargetSelector() {
     final targets = [1, 2, 3, 4, 5, 7];
-    
-    return Wrap(
-      spacing: 10,
-      children: targets.map((target) {
-        final isSelected = _targetPracticePerWeek == target;
-        return GestureDetector(
-          onTap: () => setState(() => _targetPracticePerWeek = target),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              color: isSelected ? AppTheme.primaryColor : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected 
-                    ? AppTheme.primaryColor 
-                    : Colors.grey.shade200,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final unselectedBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.15)
+        : Colors.grey.shade200;
+
+    // 单行横向滚动，紧凑芯片，减少纵向占用
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.only(right: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: targets.map((target) {
+          final isSelected = _targetPracticePerWeek == target;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => setState(() => _targetPracticePerWeek = target),
+                borderRadius: BorderRadius.circular(10),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppTheme.primaryColor : unselectedBg,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected ? AppTheme.primaryColor : borderColor,
+                    ),
+                  ),
+                  child: Text(
+                    target == 7 ? '每天' : '$target次/周',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : AppTheme.textSecondary,
+                    ),
+                  ),
+                ),
               ),
             ),
-            child: Text(
-              target == 7 ? '每天' : '$target次/周',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : AppTheme.textSecondary,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
+          );
+        }).toList(),
+      ),
     );
   }
 

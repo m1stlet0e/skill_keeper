@@ -131,7 +131,9 @@ class _PracticePrepareScreenState extends State<PracticePrepareScreen>
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkSurfaceColor
+                    : Colors.white,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.arrow_back_rounded),
@@ -149,14 +151,18 @@ class _PracticePrepareScreenState extends State<PracticePrepareScreen>
 
   Widget _buildSkillInfoCard() {
     final skill = widget.skill;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+    final shadowColor = isDark ? Colors.black.withValues(alpha: 0.25) : skill.category.color.withValues(alpha: 0.15);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBg,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: skill.category.color.withValues(alpha: 0.15),
+            color: shadowColor,
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),

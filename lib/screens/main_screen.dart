@@ -28,43 +28,50 @@ class _MainScreenState extends State<MainScreen> {
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
+      bottomNavigationBar: _buildBottomNav(context),
+    );
+  }
+
+  Widget _buildBottomNav(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final barColor = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.black.withValues(alpha: 0.06);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: barColor,
+        border: Border(
+          top: BorderSide(color: borderColor, width: 1),
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(
-                  index: 0,
-                  icon: Icons.home_rounded,
-                  activeIcon: Icons.home_rounded,
-                  label: '首页',
-                ),
-                _buildNavItem(
-                  index: 1,
-                  icon: Icons.bar_chart_rounded,
-                  activeIcon: Icons.bar_chart_rounded,
-                  label: '数据',
-                ),
-                _buildNavItem(
-                  index: 2,
-                  icon: Icons.emoji_events_outlined,
-                  activeIcon: Icons.emoji_events_rounded,
-                  label: '成就',
-                ),
-              ],
-            ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 56,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildNavItem(
+                index: 0,
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home_rounded,
+                label: '首页',
+              ),
+              _buildNavItem(
+                index: 1,
+                icon: Icons.bar_chart_outlined,
+                activeIcon: Icons.bar_chart_rounded,
+                label: '数据',
+              ),
+              _buildNavItem(
+                index: 2,
+                icon: Icons.emoji_events_outlined,
+                activeIcon: Icons.emoji_events_rounded,
+                label: '成就',
+              ),
+            ],
           ),
         ),
       ),
@@ -78,45 +85,39 @@ class _MainScreenState extends State<MainScreen> {
     required String label,
   }) {
     final isActive = _currentIndex == index;
-    
-    return GestureDetector(
-      onTap: () {
-        if (_currentIndex != index) {
-          HapticFeedback.lightImpact();
-          setState(() => _currentIndex = index);
-        }
-      },
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(
-          horizontal: isActive ? 20 : 16,
-          vertical: 8,
-        ),
-        decoration: BoxDecoration(
-          color: isActive ? AppTheme.primaryColor.withValues(alpha: 0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? AppTheme.primaryColor : AppTheme.textHint,
-              size: 24,
-            ),
-            if (isActive) ...[
-              const SizedBox(width: 8),
+    final color = isActive ? AppTheme.primaryColor : AppTheme.textHint;
+
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            if (_currentIndex != index) {
+              HapticFeedback.lightImpact();
+              setState(() => _currentIndex = index);
+            }
+          },
+          splashColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+          highlightColor: AppTheme.primaryColor.withValues(alpha: 0.05),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isActive ? activeIcon : icon,
+                color: color,
+                size: 26,
+              ),
+              const SizedBox(height: 4),
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryColor,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                  color: color,
                 ),
               ),
             ],
-          ],
+          ),
         ),
       ),
     );

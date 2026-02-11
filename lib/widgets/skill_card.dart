@@ -18,17 +18,23 @@ class SkillCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+    final shadowColor = isDark
+        ? Colors.black.withValues(alpha: 0.25)
+        : skill.category.color.withValues(alpha: 0.15);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: skill.category.color.withValues(alpha: 0.15),
+              color: shadowColor,
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),

@@ -19,6 +19,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedFilter = 0; // 0: 全部, 1: 需要关注, 2: 良好
+  bool _dailyRecommendationExpanded = false;
+  bool _attentionSectionExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -48,17 +50,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _buildStreakAndQuickActions(skillService),
                   ),
 
-                  // 每日推荐
+                  // 每日推荐（可折叠，默认收起）
                   if (skillService.dailyRecommendations.isNotEmpty) ...[
                     SliverToBoxAdapter(
-                      child: _buildDailyRecommendation(skillService),
+                      child: _buildCollapsibleDailyRecommendation(skillService),
                     ),
                   ],
                   
-                  // 需要关注的技能横向列表
+                  // 需要关注（可折叠，默认收起）
                   if (skillService.skillsNeedingAttention.isNotEmpty) ...[
                     SliverToBoxAdapter(
-                      child: _buildAttentionSection(skillService),
+                      child: _buildCollapsibleAttentionSection(skillService),
                     ),
                   ],
                   
@@ -116,29 +118,35 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               // 头像/设置按钮
-              GestureDetector(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              Builder(
+                builder: (context) {
+                  final isDark = Theme.of(context).brightness == Brightness.dark;
+                  final btnBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: btnBg,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.settings_rounded,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
                   );
                 },
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.settings_rounded,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
               ).animate(delay: 200.ms).fadeIn().scale(),
             ],
           ),
@@ -251,6 +259,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildStreakAndQuickActions(SkillService service) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+    final shadowAlpha = isDark ? 0.2 : 0.03;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -260,11 +272,11 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
+                    color: Colors.black.withValues(alpha: shadowAlpha),
                     blurRadius: 10,
                   ),
                 ],
@@ -279,12 +291,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)],
                             )
                           : null,
-                      color: service.currentStreak > 0 ? null : Colors.grey.shade200,
+                      color: service.currentStreak > 0 ? null : (isDark ? Colors.white24 : Colors.grey.shade200),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       Icons.local_fire_department_rounded,
-                      color: service.currentStreak > 0 ? Colors.white : Colors.grey.shade400,
+                      color: service.currentStreak > 0 ? Colors.white : (isDark ? Colors.white54 : Colors.grey.shade400),
                       size: 22,
                     ),
                   ),
@@ -321,11 +333,11 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
+                    color: Colors.black.withValues(alpha: shadowAlpha),
                     blurRadius: 10,
                   ),
                 ],
@@ -340,14 +352,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               colors: [Color(0xFF6BCB77), Color(0xFF8FD99A)],
                             )
                           : null,
-                      color: service.hasPracticedToday ? null : Colors.grey.shade200,
+                      color: service.hasPracticedToday ? null : (isDark ? Colors.white24 : Colors.grey.shade200),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       service.hasPracticedToday 
                           ? Icons.check_circle_rounded 
                           : Icons.radio_button_unchecked_rounded,
-                      color: service.hasPracticedToday ? Colors.white : Colors.grey.shade400,
+                      color: service.hasPracticedToday ? Colors.white : (isDark ? Colors.white54 : Colors.grey.shade400),
                       size: 22,
                     ),
                   ),
@@ -383,9 +395,93 @@ class _HomeScreenState extends State<HomeScreen> {
     ).animate(delay: 350.ms).fadeIn().slideY(begin: 0.1, end: 0);
   }
 
+  /// 可折叠的「今日推荐」区块，默认收起
+  Widget _buildCollapsibleDailyRecommendation(SkillService service) {
+    final recommendations = service.dailyRecommendations;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => setState(() => _dailyRecommendationExpanded = !_dailyRecommendationExpanded),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.lightbulb_rounded,
+                      color: AppTheme.accentColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '今日推荐',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '共${recommendations.length}项',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textHint,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      _dailyRecommendationExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                      color: AppTheme.textHint,
+                      size: 24,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+            child: _dailyRecommendationExpanded
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: recommendations.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final skill = entry.value;
+                        return _buildRecommendationCard(skill, index);
+                      }).toList(),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDailyRecommendation(SkillService service) {
     final recommendations = service.dailyRecommendations;
-    
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       child: Column(
@@ -393,11 +489,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.lightbulb_rounded,
-                color: AppTheme.accentColor,
-                size: 20,
-              ),
+              Icon(Icons.lightbulb_rounded, color: AppTheme.accentColor, size: 20),
               const SizedBox(width: 8),
               Text(
                 '今日推荐',
@@ -410,10 +502,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const Spacer(),
               Text(
                 '最需要练习的技能',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppTheme.textHint,
-                ),
+                style: TextStyle(fontSize: 11, color: AppTheme.textHint),
               ),
             ],
           ),
@@ -547,9 +636,105 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// 可折叠的「需要关注」区块，默认收起
+  Widget _buildCollapsibleAttentionSection(SkillService skillService) {
+    final attentionSkills = skillService.skillsNeedingAttention.take(5).toList();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => setState(() => _attentionSectionExpanded = !_attentionSectionExpanded),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.notifications_active_rounded,
+                      color: AppTheme.warningColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '需要关注',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${attentionSkills.length}个技能',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textHint,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      _attentionSectionExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                      color: AppTheme.textHint,
+                      size: 24,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+            child: _attentionSectionExpanded
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: SizedBox(
+                      height: 180,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(right: 20),
+                        itemCount: attentionSkills.length,
+                        itemBuilder: (context, index) {
+                          final skill = attentionSkills[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: SkillMiniCard(
+                              skill: skill,
+                              onTap: () => _navigateToSkillDetail(skill),
+                              onPracticeTap: () => _showPracticeDialog(skill),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAttentionSection(SkillService skillService) {
     final attentionSkills = skillService.skillsNeedingAttention.take(5).toList();
-    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -582,9 +767,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ).animate(delay: 450.ms).fadeIn(),
-        
         const SizedBox(height: 12),
-        
         SizedBox(
           height: 180,
           child: ListView.builder(
@@ -606,7 +789,6 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
         ),
-        
         const SizedBox(height: 20),
       ],
     );
@@ -632,36 +814,48 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const Spacer(),
               // 筛选按钮
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: List.generate(filters.length, (index) {
-                    final isSelected = _selectedFilter == index;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedFilter = index),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppTheme.primaryColor : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
+              Builder(
+                builder: (context) {
+                  final isDark = Theme.of(context).brightness == Brightness.dark;
+                  final tabBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+                  return Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: tabBg,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: isDark ? null : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 6,
                         ),
-                        child: Text(
-                          filters[index],
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected ? Colors.white : AppTheme.textHint,
+                      ],
+                    ),
+                    child: Row(
+                      children: List.generate(filters.length, (index) {
+                        final isSelected = _selectedFilter == index;
+                        return GestureDetector(
+                          onTap: () => setState(() => _selectedFilter = index),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              filters[index],
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                color: isSelected ? Colors.white : AppTheme.textHint,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
+                        );
+                      }),
+                    ),
+                  );
+                },
               ),
             ],
           ),
