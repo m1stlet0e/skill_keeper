@@ -85,12 +85,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _navigateToAddSkill(),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('添加技能'),
-        backgroundColor: AppTheme.primaryColor,
-      ).animate().scale(delay: 500.ms, duration: 300.ms),
     );
   }
 
@@ -117,7 +111,35 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              // 头像/设置按钮
+              // 添加技能（非高频，放顶栏即可）
+              Builder(
+                builder: (context) {
+                  final isDark = Theme.of(context).brightness == Brightness.dark;
+                  final btnBg = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+                  return GestureDetector(
+                    onTap: () => _navigateToAddSkill(),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: btnBg,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.add_rounded,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  );
+                },
+              ).animate(delay: 150.ms).fadeIn().scale(),
+              const SizedBox(width: 10),
+              // 设置
               Builder(
                 builder: (context) {
                   final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -921,7 +943,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 8),
                 if (_selectedFilter == 0)
                   Text(
-                    '点击下方按钮添加你的第一个技能\n开始追踪你的技能衰退',
+                    '点击右上角「+」添加你的第一个技能\n开始追踪你的技能衰退',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: AppTheme.textHint,

@@ -119,6 +119,15 @@ class SettingsScreen extends StatelessWidget {
               const Divider(height: 1, indent: 56),
               _buildSettingsItem(
                 context,
+                icon: Icons.science_outlined,
+                iconColor: AppTheme.infoColor,
+                title: '技能衰退说明',
+                subtitle: '受遗忘曲线与技能保持研究启发',
+                onTap: () => _showDecayExplanationDialog(context),
+              ),
+              const Divider(height: 1, indent: 56),
+              _buildSettingsItem(
+                context,
                 icon: Icons.code_rounded,
                 iconColor: AppTheme.secondaryColor,
                 title: '技术栈',
@@ -378,6 +387,62 @@ class SettingsScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showDecayExplanationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.science_outlined, color: AppTheme.infoColor),
+            SizedBox(width: 8),
+            Text('技能衰退说明'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '本应用的技能衰退模型受艾宾浩斯遗忘曲线（Ebbinghaus forgetting curve）及技能保持（skill retention）研究启发。'
+                '长期不练习会导致熟练度下降，本应用用「衰退」来量化这一过程。',
+                style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.textPrimary,
+                      height: 1.5,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '不同分类的衰退系数为设计取值，用于区分：'
+                '身体记忆型（如运动、音乐）衰退较慢，知识记忆型（如语言、技术）衰退较快。'
+                '具体公式与系数仅供参考，旨在帮助你优先安排「快要生锈」的技能。',
+                style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.textSecondary,
+                      height: 1.5,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '衰退在每日首次打开 App 时按「当天」统一计算并保存，同一天内多次打开不会重复扣减。',
+                style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textHint,
+                      height: 1.4,
+                    ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('知道了'),
+          ),
+        ],
       ),
     );
   }

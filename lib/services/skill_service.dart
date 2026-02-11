@@ -157,6 +157,7 @@ class SkillService extends ChangeNotifier {
     try {
       await _loadSkills();
       await _loadStreakData();
+      await _applyDailyDecayIfNeeded();
       _initAchievements();
       await _loadAchievementProgress();
       _updateAllAchievements();
@@ -168,22 +169,60 @@ class SkillService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 从本地存储加载技能
+  /// 从本地存储加载技能（不在此处执行衰退，由 _applyDailyDecayIfNeeded 统一处理）
   Future<void> _loadSkills() async {
-      final prefs = await SharedPreferences.getInstance();
-      final skillsJson = prefs.getString('skills');
-      
-      if (skillsJson != null) {
-        final List<dynamic> decoded = json.decode(skillsJson);
-        _skills = decoded.map((e) => Skill.fromJson(e)).toList();
-        
-        // 更新所有技能的衰退
-        _updateAllSkillsDecay();
-      } else {
-        // 添加示例技能
-        _skills = _getSampleSkills();
-        await _saveSkills();
+    final prefs = await SharedPreferences.getInstance();
+    final skillsJson = prefs.getString('skills');
+
+    if (skillsJson != null) {
+      final List<dynamic> decoded = json.decode(skillsJson);
+      _skills = decoded.map((e) => Skill.fromJson(e)).toList();
+    } else {
+      _skills = _getSampleSkills();
+      await _saveSkills();
+    }
+  }
+
+  /// 上次应用衰退的日期（仅日期，用于每日只衰退一次）
+  static const _keyLastDecayDate = 'lastDecayAppliedDate';
+
+  /// 加载上次衰退日期
+  Future<DateTime?> _loadLastDecayDate() async {
+    final prefs = await SharedPreferences.getInstance();
+    final s = prefs.getString(_keyLastDecayDate);
+    if (s == null) return null;
+    try {
+      return DateTime.parse(s);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 保存上次衰退日期（仅存日期部分）
+  Future<void> _saveLastDecayDate(DateTime date) async {
+    final prefs = await SharedPreferences.getInstance();
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    await prefs.setString(_keyLastDecayDate, dateOnly.toIso8601String().split('T').first);
+  }
+
+  /// 在加载完成后调用：若今日尚未应用衰退，则按「今日」为基准计算衰退并落盘，保证每日只算一次
+  Future<void> _applyDailyDecayIfNeeded() async {
+    if (_skills.isEmpty) return;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final lastDecay = await _loadLastDecayDate();
+
+    if (lastDecay != null) {
+      final lastDecayDate = DateTime(lastDecay.year, lastDecay.month, lastDecay.day);
+      if (today.isAtSameMomentAs(lastDecayDate) || today.isBefore(lastDecayDate)) {
+        return;
       }
+    }
+
+    _updateAllSkillsDecay(referenceDate: today);
+    await _saveSkills();
+    await _saveLastDecayDate(today);
   }
 
   /// 加载连续打卡数据
@@ -507,21 +546,28 @@ class SkillService extends ChangeNotifier {
     await prefs.setString('skills', skillsJson);
   }
 
-  /// 更新所有技能的衰退值
-  void _updateAllSkillsDecay() {
-    _skills = _skills.map((skill) => _calculateDecay(skill)).toList();
+  /// 更新所有技能的衰退值。[referenceDate] 为计算基准日（仅日期有效），默认当天，保证同一天多次打开只按当日算一次
+  void _updateAllSkillsDecay({DateTime? referenceDate}) {
+    final ref = referenceDate ?? DateTime.now();
+    final refDate = DateTime(ref.year, ref.month, ref.day);
+    _skills = _skills.map((skill) => _calculateDecay(skill, refDate)).toList();
   }
 
-  /// 计算技能衰退
-  Skill _calculateDecay(Skill skill) {
-    final daysSinceLastPractice = skill.daysSinceLastPractice;
-    
+  /// 计算技能衰退（以 referenceDate 为「今天」，用于每日统一基准）
+  Skill _calculateDecay(Skill skill, DateTime referenceDate) {
+    final lastDate = DateTime(
+      skill.lastPracticeAt.year,
+      skill.lastPracticeAt.month,
+      skill.lastPracticeAt.day,
+    );
+    final daysSinceLastPractice = referenceDate.difference(lastDate).inDays;
+
     if (daysSinceLastPractice <= 0) {
       return skill;
     }
 
     const baseDecayRate = 0.3;
-    
+
     double timeMultiplier;
     if (daysSinceLastPractice <= 7) {
       timeMultiplier = 0.5;
@@ -533,11 +579,12 @@ class SkillService extends ChangeNotifier {
       timeMultiplier = 0.5;
     }
 
-    final totalDecay = baseDecayRate * skill.category.decayFactor * 
-                       timeMultiplier * daysSinceLastPractice;
-    
-    final newProficiency = (skill.currentProficiency - totalDecay).clamp(10.0, 100.0);
-    
+    final totalDecay = baseDecayRate * skill.category.decayFactor *
+        timeMultiplier * daysSinceLastPractice;
+
+    final newProficiency =
+        (skill.currentProficiency - totalDecay).clamp(10.0, 100.0);
+
     return skill.copyWith(currentProficiency: newProficiency);
   }
 
@@ -606,6 +653,7 @@ class SkillService extends ChangeNotifier {
     await prefs.remove('lastPracticeDate');
     await prefs.remove('hasRescued');
     await prefs.remove('achievements');
+    await prefs.remove(_keyLastDecayDate);
     notifyListeners();
   }
 
