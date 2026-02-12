@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../services/auth_service.dart';
+import '../../services/notification_service.dart';
 import '../../services/skill_service.dart';
 import '../../services/theme_service.dart';
 
@@ -60,6 +61,23 @@ class SettingsScreen extends StatelessWidget {
               context,
               children: [
                 _buildThemeSwitch(context, themeService),
+              ],
+            ),
+          ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0),
+          const SizedBox(height: 24),
+
+          // === 练习提醒 ===
+          _buildSectionTitle(context, '练习提醒'),
+          const SizedBox(height: 8),
+          Consumer<NotificationService>(
+            builder: (context, noti, _) => _buildSettingsCard(
+              context,
+              children: [
+                _buildReminderSwitch(context, noti),
+                if (noti.reminderEnabled) ...[
+                  const Divider(height: 1, indent: 56),
+                  _buildReminderTimeRow(context, noti),
+                ],
               ],
             ),
           ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0),
@@ -389,6 +407,148 @@ class SettingsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildReminderSwitch(BuildContext context, NotificationService noti) {
+    return InkWell(
+      onTap: () async {
+        final ok = await noti.setReminderEnabled(!noti.reminderEnabled);
+        if (context.mounted && !ok) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('需要允许通知权限才能开启练习提醒'),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.notifications_active_rounded,
+                color: AppTheme.primaryColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '练习提醒',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
+                        ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    noti.reminderEnabled
+                        ? '每天 ${noti.reminderTimeStr} 提醒'
+                        : '每日固定时间提醒，技能防锈',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textHint,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            Switch(
+              value: noti.reminderEnabled,
+              onChanged: (v) async {
+                final ok = await noti.setReminderEnabled(v);
+                if (context.mounted && !ok) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('需要允许通知权限才能开启练习提醒'),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                }
+              },
+              activeTrackColor: AppTheme.primaryColor.withValues(alpha: 0.5),
+              activeThumbColor: AppTheme.primaryColor,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReminderTimeRow(BuildContext context, NotificationService noti) {
+    return InkWell(
+      onTap: () => _showReminderTimePicker(context, noti),
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            const SizedBox(width: 36, height: 36),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '提醒时间',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+              ),
+            ),
+            Text(
+              noti.reminderTimeStr,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.primaryColor,
+                  ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.access_time_rounded, size: 20, color: AppTheme.textHint),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showReminderTimePicker(
+      BuildContext context, NotificationService noti) async {
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: noti.reminderHour, minute: noti.reminderMinute),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppTheme.primaryColor,
+              onPrimary: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (time != null && context.mounted) {
+      await noti.setReminderTime(time.hour, time.minute);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('已设为每天 ${noti.reminderTimeStr} 提醒'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
   }
 
   void _showDecayExplanationDialog(BuildContext context) {
