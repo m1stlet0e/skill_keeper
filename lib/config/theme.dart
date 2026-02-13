@@ -9,6 +9,11 @@ class AppTheme {
   static const Color backgroundColor = Color(0xFFF5F0E8);  // 温暖米色
   static const Color surfaceColor = Color(0xFFFFFFFF);
   static const Color cardColor = Color(0xFFFFFFFF);
+
+  // 数据页「拿铁」配色
+  static const Color statsCaramel = Color(0xFFC68E5D);     // 焦糖色
+  static const Color statsCream = Color(0xFFFFFBF5);       // 奶油白卡片
+  static const Color statsDarkBrown = Color(0xFF3D3229);  // 深褐文字
   
   // Text Colors
   static const Color textPrimary = Color(0xFF2D3436);

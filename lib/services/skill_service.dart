@@ -11,10 +11,24 @@ class SkillService extends ChangeNotifier {
   bool _isLoading = false;
   final _uuid = const Uuid();
   
+  // 缓存
+  Map<String, dynamic>? _cachedStatistics;
+  Map<DateTime, int>? _cachedHeatMap;
+  Map<SkillCategory, double>? _cachedCategoryProficiency;
+  List<int>? _cachedWeeklyFlowMinutes;
+
   // 连续打卡
   int _currentStreak = 0;
   int _longestStreak = 0;
   DateTime? _lastPracticeDate;  // 最后一次打卡的日期（只看日期，不看时间）
+
+  void _invalidateCache() {
+    _cachedStatistics = null;
+    _cachedHeatMap = null;
+    _cachedCategoryProficiency = null;
+    _cachedWeeklyFlowMinutes = null;
+  }
+
 
   // 力挽狂澜成就标记：是否曾将严重衰退技能恢复到良好或以上
   bool _hasRescued = false;
@@ -46,9 +60,14 @@ class SkillService extends ChangeNotifier {
     return today.isAtSameMomentAs(lastDate);
   }
   
-  /// 获取需要提醒的技能
+  /// 需要关注的技能：状态为 生锈 / 衰退 / 严重衰退（与首页筛选、顶部统计一致）
   List<Skill> get skillsNeedingAttention {
-    return _skills.where((s) => s.needsReminder).toList()
+    return _skills
+        .where((s) =>
+            s.status == SkillStatus.rusty ||
+            s.status == SkillStatus.declining ||
+            s.status == SkillStatus.critical)
+        .toList()
       ..sort((a, b) => b.daysSinceLastPractice.compareTo(a.daysSinceLastPractice));
   }
 
@@ -82,6 +101,8 @@ class SkillService extends ChangeNotifier {
 
   /// 获取各分类的平均熟练度（用于雷达图）
   Map<SkillCategory, double> get categoryProficiency {
+    if (_cachedCategoryProficiency != null) return _cachedCategoryProficiency!;
+
     final map = <SkillCategory, double>{};
     for (final category in SkillCategory.values) {
       final categorySkills = _skills.where((s) => s.category == category).toList();
@@ -92,11 +113,14 @@ class SkillService extends ChangeNotifier {
           0, (sum, s) => sum + s.currentProficiency) / categorySkills.length;
       }
     }
+    _cachedCategoryProficiency = map;
     return map;
   }
 
-  /// 获取所有打卡日期（用于热力图）
+  /// 获取所有打卡日期（用于热���图）
   Map<DateTime, int> get practiceHeatMap {
+    if (_cachedHeatMap != null) return _cachedHeatMap!;
+
     final map = <DateTime, int>{};
     for (final skill in _skills) {
       for (final record in skill.practiceHistory) {
@@ -104,13 +128,16 @@ class SkillService extends ChangeNotifier {
         map[date] = (map[date] ?? 0) + 1;
       }
     }
+    _cachedHeatMap = map;
     return map;
   }
 
   /// 获取统计数据
   Map<String, dynamic> get statistics {
+    if (_cachedStatistics != null) return _cachedStatistics!;
+
     if (_skills.isEmpty) {
-      return {
+      _cachedStatistics = {
         'totalSkills': 0,
         'averageProficiency': 0.0,
         'skillsInDanger': 0,
@@ -119,13 +146,18 @@ class SkillService extends ChangeNotifier {
         'currentStreak': _currentStreak,
         'longestStreak': _longestStreak,
       };
+      return _cachedStatistics!;
     }
 
     final totalProficiency = _skills.fold<double>(
       0, (sum, skill) => sum + skill.currentProficiency);
-    
+
+    // 与 skillsNeedingAttention 一致：rusty / declining / critical
     final skillsInDanger = _skills.where(
-      (s) => s.status == SkillStatus.declining || s.status == SkillStatus.critical
+      (s) =>
+          s.status == SkillStatus.rusty ||
+          s.status == SkillStatus.declining ||
+          s.status == SkillStatus.critical,
     ).length;
 
     final totalPracticeMinutes = _skills.fold<int>(
@@ -135,7 +167,7 @@ class SkillService extends ChangeNotifier {
     final totalPracticeCount = _skills.fold<int>(
       0, (sum, skill) => sum + skill.practiceHistory.length);
 
-    return {
+    _cachedStatistics = {
       'totalSkills': _skills.length,
       'averageProficiency': totalProficiency / _skills.length,
       'skillsInDanger': skillsInDanger,
@@ -144,6 +176,7 @@ class SkillService extends ChangeNotifier {
       'currentStreak': _currentStreak,
       'longestStreak': _longestStreak,
     };
+    return _cachedStatistics!;
   }
 
   SkillService() {
@@ -165,6 +198,7 @@ class SkillService extends ChangeNotifier {
       debugPrint('Error loading data: $e');
     }
 
+    _invalidateCache();
     _isLoading = false;
     notifyListeners();
   }
@@ -223,6 +257,7 @@ class SkillService extends ChangeNotifier {
     _updateAllSkillsDecay(referenceDate: today);
     await _saveSkills();
     await _saveLastDecayDate(today);
+    _invalidateCache();
   }
 
   /// 加载连续打卡数据
@@ -613,10 +648,11 @@ class SkillService extends ChangeNotifier {
 
     _skills.add(newSkill);
     await _saveSkills();
-    
+
     // 检查成就
     checkNewAchievements();
-    
+
+    _invalidateCache();
     notifyListeners();
   }
 
@@ -626,6 +662,7 @@ class SkillService extends ChangeNotifier {
     if (index != -1) {
       _skills[index] = updatedSkill;
       await _saveSkills();
+      _invalidateCache();
       notifyListeners();
     }
   }
@@ -634,6 +671,7 @@ class SkillService extends ChangeNotifier {
   Future<void> deleteSkill(String skillId) async {
     _skills.removeWhere((s) => s.id == skillId);
     await _saveSkills();
+    _invalidateCache();
     notifyListeners();
   }
 
@@ -654,6 +692,7 @@ class SkillService extends ChangeNotifier {
     await prefs.remove('hasRescued');
     await prefs.remove('achievements');
     await prefs.remove(_keyLastDecayDate);
+    _invalidateCache();
     notifyListeners();
   }
 
@@ -714,9 +753,10 @@ class SkillService extends ChangeNotifier {
     
     // 检查成就
     final newAchievements = checkNewAchievements();
-    
+
+    _invalidateCache();
     notifyListeners();
-    
+
     return newAchievements;
   }
 
@@ -786,6 +826,7 @@ class SkillService extends ChangeNotifier {
     // 检查成就
     final newAchievements = checkNewAchievements();
 
+    _invalidateCache();
     notifyListeners();
 
     return newAchievements;
@@ -860,6 +901,8 @@ class SkillService extends ChangeNotifier {
 
   /// 最近 8 周每周的心流时长（分钟），[本周, 上周, ..., 8周前]
   List<int> getWeeklyFlowMinutes() {
+    if (_cachedWeeklyFlowMinutes != null) return _cachedWeeklyFlowMinutes!;
+
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     // 本周一 00:00
@@ -880,6 +923,7 @@ class SkillService extends ChangeNotifier {
         }
       }
     }
+    _cachedWeeklyFlowMinutes = totals;
     return totals;
   }
 

@@ -15,10 +15,10 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    StatsScreen(),
-    AchievementsScreen(),
+  List<Widget> get _screens => [
+    const HomeScreen(),
+    StatsScreen(onGoToHome: () => setState(() => _currentIndex = 0)),
+    const AchievementsScreen(),
   ];
 
   @override
